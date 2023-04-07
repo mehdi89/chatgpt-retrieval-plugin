@@ -1,6 +1,6 @@
 import os
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, Depends, Body, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Depends, Body, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 
@@ -12,6 +12,7 @@ from models.api import (
     UpsertRequest,
     UpsertResponse,
 )
+from typing import Optional
 from datastore.factory import get_datastore
 from services.file import get_document_from_file
 
@@ -24,7 +25,6 @@ def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sc
     if credentials.scheme != "Bearer" or credentials.credentials != BEARER_TOKEN:
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     return credentials
-
 
 app = FastAPI(dependencies=[Depends(validate_token)])
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
@@ -46,9 +46,11 @@ app.mount("/sub", sub_app)
 )
 async def upsert_file(
     file: UploadFile = File(...),
+    source_id: Optional[str] = Form(None),
+    author: Optional[str] = Form(None),
+    url: Optional[str] = Form(None),
 ):
-    document = await get_document_from_file(file)
-
+    document = await get_document_from_file(file, source_id, author, url)
     try:
         ids = await datastore.upsert([document])
         return UpsertResponse(ids=ids)
@@ -79,6 +81,7 @@ async def upsert(
 async def query_main(
     request: QueryRequest = Body(...),
 ):
+    
     try:
         results = await datastore.query(
             request.queries,

@@ -7,10 +7,8 @@ from models.models import (
 from pydantic import BaseModel
 from typing import List, Optional
 
-
 class UpsertRequest(BaseModel):
     documents: List[Document]
-
 
 class UpsertResponse(BaseModel):
     ids: List[str]

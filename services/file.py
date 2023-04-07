@@ -11,10 +11,13 @@ import pptx
 from models.models import Document, DocumentMetadata, Source
 
 
-async def get_document_from_file(file: UploadFile) -> Document:
+async def get_document_from_file(file: UploadFile, source_id: str = None, author: str = None, url: str = None) -> Document:
     extracted_text = await extract_text_from_form_file(file)
     metadata = DocumentMetadata(
         source=Source.file,
+        source_id=source_id, 
+        author=author, 
+        url=url
     )
     doc = Document(text=extracted_text, metadata=metadata)
 
@@ -96,7 +99,11 @@ async def extract_text_from_form_file(file: UploadFile):
 
     file_stream = await file.read()
 
-    temp_file_path = "/tmp/temp_file"
+    temp_dir = os.environ.get('TEMP') or '/tmp/'  # get the temporary directory
+    temp_file_path = os.path.join(temp_dir, 'temp_file')  # join the temporary directory and file name
+    temp_file_path = temp_file_path.replace('/', '\\')  # replace forward slashes with backslashes
+
+    # temp_file_path = "/tmp/temp_file"
 
     # write the file to a temporary location
     with open(temp_file_path, "wb") as f:
